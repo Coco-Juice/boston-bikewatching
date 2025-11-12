@@ -24,7 +24,14 @@ body {
   pointer-events: none;
 
   circle {
-    fill: red;
+    --color-departures: red;
+    --color-arrivals: darkblue;
+    --color: color-mix(
+      in oklch,
+      var(--color-departures) calc(100% * var(--departure-ratio)),
+      var(--color-arrivals)
+    );
+    fill: var(--color);
     fill-opacity: 60%;
     stroke: white;
     pointer-events: auto;
@@ -64,5 +71,3 @@ header {
   color: #666;
   font-style: italic;
 }
-
-

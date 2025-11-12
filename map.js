@@ -47,7 +47,7 @@ function computeStationTraffic(stations, trips) {
   const arrivals = d3.rollup (
     trips,
     (v) => v.length,
-    (d) => d.start_station_id,
+    (d) => d.end_station_id,
   );
 
   // Update each station..
@@ -84,7 +84,10 @@ map.on('load', async () => {
     circles
       .data(filteredStations, (d) => d.short_name)
       .join('circle') // Ensure the data is bound correctly
-      .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+      .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+      .style('--departure-ratio', (d) =>
+        stationFlow(d.departures / d.totalTraffic)
+      );
   }
 
   function updateTimeDisplay() {
@@ -160,6 +163,7 @@ map.on('load', async () => {
     .scaleSqrt()
     .domain([0, d3.max(stations, (d) => d.totalTraffic)])
     .range([0, 25]);
+  let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
   const svg = d3.select('#map').select('svg');
   const circles = svg
@@ -168,10 +172,12 @@ map.on('load', async () => {
     .enter()
     .append('circle')
     .attr('r', d => radiusScale(d.totalTraffic)) // Radius of the circle
-    .attr('fill', 'red') // Circle fill color
     .attr('stroke', 'white') // Circle border color
     .attr('stroke-width', 1) // Circle border thickness
     .attr('opacity', 0.8) // Circle opacity
+    .style('--departure-ratio', (d) =>
+      stationFlow(d.departures / d.totalTraffic),
+    )
     .each(function (d) {
       // Add <title> for browser tooltips
       d3.select(this)
