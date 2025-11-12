@@ -1,7 +1,14 @@
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1IjoiY29jby1qdWljZSIsImEiOiJjbWh0d2Y5YnkwcHpjMmtwdnJtcTFhYnQyIn0.UBqk3ugVtdebA-LrBNMv6A';
+
+function getCoords(station) {
+  const point = new mapboxgl.LngLat(+station.lon, +station.lat); // Convert lon/lat to Mapbox LngLat
+  const { x, y } = map.project(point); // Project to pixel coordinates
+  return { cx: x, cy: y }; // Return as object for use in SVG attributes
+}
 
 // Initialize the map
 const map = new mapboxgl.Map({
@@ -43,4 +50,43 @@ map.on('load', async () => {
       'line-opacity': 0.4,
     },
   });
+
+  let jsonData;
+  try {
+    const jsonurl = 'bluebikes-stations.json';
+
+    // Await JSON fetch
+    jsonData = await d3.json(jsonurl);
+
+    console.log('Loaded JSON Data:', jsonData); // Log to verify structure
+  } catch (error) {
+    console.error('Error loading JSON:', error); // Handle errors
+  }
+
+  let stations = jsonData.data.stations;
+  console.log('Stations Array:', jsonData.data);
+
+  const svg = d3.select('#map').select('svg');
+  const circles = svg
+    .selectAll('circle')
+    .data(stations)
+    .enter()
+    .append('circle')
+    .attr('r', 5) // Radius of the circle
+    .attr('fill', 'steelblue') // Circle fill color
+    .attr('stroke', 'white') // Circle border color
+    .attr('stroke-width', 1) // Circle border thickness
+    .attr('opacity', 0.8); // Circle opacity
+
+    function updatePositions() {
+      circles
+        .attr('cx', (d) => getCoords(d).cx) // Set the x-position using projected coordinates
+        .attr('cy', (d) => getCoords(d).cy); // Set the y-position using projected coordinates
+    }    
+
+    updatePositions();
+    map.on('move', updatePositions); // Update during map movement
+    map.on('zoom', updatePositions); // Update during zooming
+    map.on('resize', updatePositions); // Update on window resize
+    map.on('moveend', updatePositions); // Final adjustment after movement ends
 });
